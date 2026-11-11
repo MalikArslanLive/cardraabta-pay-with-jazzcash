@@ -1,40 +1,47 @@
 # CardRaabta – Pay with JazzCash for WooCommerce
 
-Version **1.0.0-beta.1** — initial sandbox beta. **Live payments and refunds are disabled.**
+Stable version **1.0.0**. This version supports the **sandbox payment workflow**; live payments and refunds remain disabled pending approved production API verification. Do not collect real customer payments with this release.
 
-Slug and installation folder: `cardraabta-pay-with-jazzcash`.
-Main file: `cardraabta-pay-with-jazzcash.php`.
+Independent software by [Malik Arslan](https://malikarslan.com/), not affiliated with or endorsed by JazzCash or WooCommerce. GPL-2.0-or-later; see LICENSE.
 
-This independent WooCommerce integration creates a JazzCash-hosted sandbox payment link, verifies signed returns against the order and durable transaction ledger, and provides transaction history, search, provider details and CSV export. Customers enter payment details on the provider’s hosted page. The plugin has no card PAN/CVV, wallet PIN or OTP input fields.
+## Installation
 
-## Setup
+Requirements: WordPress 6.5+, WooCommerce 8.3+, PHP 8.1+ with OpenSSL, HTTPS, PKR, and MySQL/MariaDB named locks. SQLite cannot process payments because locks fail closed.
 
-1. Install WooCommerce and upload the plugin ZIP through **Plugins → Add New Plugin → Upload Plugin**.
-2. Activate **CardRaabta – Pay with JazzCash for WooCommerce**.
-3. Configure **WooCommerce → Settings → Payments → Pay With JazzCash** with merchant sandbox credentials. Keep Sandbox selected.
-4. Use PKR and HTTPS. Configure `/wc-api/result/` as the return path and `/jazzcash_ipn_v2` as the REST IPN path.
-5. Test successful, unsuccessful, pending and repeated responses against the provider portal, WooCommerce order and transaction ledger.
+1. Install and activate WooCommerce.
+2. Upload `cardraabta-pay-with-jazzcash-1.0.0.zip` through Plugins → Add New Plugin → Upload Plugin; activate it.
+3. Open WooCommerce → Settings → Payments → Pay With JazzCash. Enable the gateway and enter your **sandbox** merchant ID, password and integrity salt.
+4. Keep Sandbox selected, use PKR, and serve checkout over HTTPS.
+5. Set the JazzCash portal Return URL to `https://YOUR-STORE/wc-api/result/`, IPN URL to `https://YOUR-STORE/jazzcash_ipn_v2`, and IPN Protocol to REST. Use one active integration for these routes.
+6. Verify success, failure, pending, duplicate and interrupted payments against the provider portal, WooCommerce order and transaction ledger before any deployment.
 
-Use one active integration for these callback endpoints. Merchant approval and credentials are arranged separately with JazzCash. Requirements: WordPress 6.5+, WooCommerce 8.3+, PHP 8.1+ with OpenSSL, and MySQL/MariaDB named locks.
+Live credential fields are retained for compatibility, but selecting Live makes the gateway unavailable. The version number does not change this restriction. Production contract and real merchant end-to-end tests are pending.
 
-## Payment and security behavior
+## Payment behavior
 
-The gateway identifier is `crj_card`. The fixed sandbox HTTPS endpoint, callback routes, order metadata, receiving settings and ledger identifiers bind the payment workflow. Signed callbacks validate the order, current total, durable attempt, environment, merchant, currency and reference. Duplicate events are idempotent; financial mutations require connection locks. Ledger completion requires an actually paid WooCommerce order. REST IPN V1 authentication alone does not complete payment.
+The plugin requests a hosted payment link from the fixed JazzCash HTTPS API. Customers enter payment details on JazzCash's page; this plugin does not collect PAN/CVV, wallet PIN or OTP. Available hosted methods depend on the merchant/provider configuration.
 
-Credentials use authenticated encryption derived from site configuration salts. Back up wp-config.php and the database together; re-enter credentials after salt changes. Diagnostic logs avoid raw secrets, signed hashes and private hosted links. Signed-return diagnostics record only whether an authorization code and settlement date were present, not their values. Protect exports, backups and administrator accounts. See `readme.txt` and `SECURITY.md` for details.
+A signed return must match the order gateway, sandbox environment, current amount, merchant, currency, request reference and durable attempt. Codes `000`/`121` are treated as success in this sandbox implementation; the production contract must confirm their meaning. IPN V1 authentication alone never marks an order paid. Replays are idempotent and financial mutations use real database connection locks. A second attempt cannot be recorded as completed for an already-paid order with another transaction ID.
 
-## Return page and transaction details
+Returns disclose private order links only to the owning account or checkout session. A signed, ten-minute same-site GET continuation can restore cookies omitted by cross-site POST; the ticket alone does not authorize disclosure.
 
-A verified browser return redirects to WooCommerce's order-received page only after the customer account or checkout session is authorized. A signed, ten-minute same-site GET continuation restores cookies that a cross-site POST may omit; the ticket alone cannot reveal the order key. Unrecognized browsers receive a neutral response and can use their original order link or owner account.
+## Transactions, privacy and backups
 
-View Details and CSV expose the same allowlisted transaction fields. Authorization code, retrieval reference (both provider spellings), response message, settlement date/expiry, bank, merchant/submerchant, product, API version and language are retained when supplied in a verified response. Later responses with omitted or empty optional fields preserve existing details for that exact payment attempt. Missing values display **Not available in verified response**; the plugin never manufactures bank authorization codes. Historical values that were never saved cannot be reconstructed from a screenshot.
+WooCommerce → CardRaabta Transactions provides search, verified provider details and CSV export to WooCommerce managers. Exports require a nonce and escape untrusted spreadsheet formulas. Response codes retain leading zeros. Unavailable provider fields are explicitly marked; the plugin never invents authorization codes or settlement data.
 
-CSV downloads use `cardraabta-pay-with-jazzcash-transactions-YYYY-MM-DD.csv`. Each column represents one datum: the main table and detail fields are combined without repeating transaction ID, response code, type or merchant reference. Response codes keep leading zeros in Excel; untrusted formula prefixes are escaped. Secrets, hashes, card details, wallet PINs, OTPs and arbitrary callback fields are excluded.
+The ledger survives order deletion. Settings and ledger records are retained after uninstall; merchants must define retention, protect exports/backups and handle privacy requests. No automatic eraser or retention scheduler is included. Provider response text may contain identifiers.
 
-## Testing and release status
+Passwords and integrity salts are AES-256-GCM encrypted using keys derived from WordPress salts. Back up `wp-config.php` and the database together. Re-enter credentials after changing salts. Logs contain allowlisted diagnostic shapes rather than raw credentials, payloads or hosted links. See [SECURITY.md](SECURITY.md) and [readme.txt](readme.txt) for service and privacy details.
 
-Automated callback, parsing, mocked provider/API, encryption, export and return-handler tests cover the sandbox workflow. Local SQLite tests use an explicit lock shim and do not establish real database concurrency or provider interoperability.
+## Development and release
 
-Merchant sandbox end-to-end verification and a verified production integration are still required. This beta is for internal testing and is not a production or WordPress.org submission package. A new name or slug does not establish live verification. No real customer payment is performed by automated tests.
+Use the existing isolated checkout; no additional worktree is required. Run checks only against a disposable WordPress/WooCommerce database:
 
-Developed by [Malik Arslan](https://malikarslan.com/). Independent software, not affiliated with or endorsed by JazzCash or WooCommerce. GPL-2.0-or-later; see LICENSE.
+```sh
+CRJ_TESTING=1 wp eval-file wp-content/plugins/cardraabta-pay-with-jazzcash/tests/integration.php
+python3 scripts/build-release.py dist
+```
+
+Tests create orders and synthetic ledger entries; never run them on a merchant store. GitHub Actions runs PHP lint, real database integration tests, WordPress Plugin Check against the packaged ZIP, JavaScript syntax checks and dependency review. CodeQL scans PHP-independent JavaScript security paths; PHP payment behavior is covered by Plugin Check and regression tests. See [docs/TESTING.md](docs/TESTING.md) for the matrix, commands and limits.
+
+The ZIP contains only runtime files, license and user documentation. CI/tests/development files and credentials are excluded. Its SHA-256 file accompanies the release. WordPress.org approval is a separate human review; this sandbox-only implementation still needs the production contract before it can serve as a complete live payment gateway.

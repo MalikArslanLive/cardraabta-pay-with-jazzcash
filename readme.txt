@@ -5,14 +5,14 @@ Requires at least: 6.5
 Tested up to: 7.1
 Requires PHP: 8.1
 Requires Plugins: woocommerce
-Stable tag: 1.0.0-beta.1
+Stable tag: 1.0.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Internal JazzCash Orchestrator sandbox beta with signed returns, diagnostic IPN and a durable transaction ledger.
+JazzCash hosted sandbox payments for WooCommerce, signed returns, transaction history and CSV export.
 
 == Description ==
-This is an internal sandbox beta for testing the JazzCash hosted Orchestrator integration. It is not a production release or WordPress.org submission while live processing remains disabled. CardRaabta is independent of JazzCash and is not an official JazzCash plugin.
+Version 1.0.0 integrates the JazzCash hosted sandbox workflow. Live payments and refunds are disabled; do not use this version to collect real customer payments. Production API verification is pending. CardRaabta is independent of JazzCash and is not an official JazzCash plugin.
 
 = Features =
 * One Pay With JazzCash checkout choice; actual methods are supplied by JazzCash's hosted page.
@@ -59,8 +59,8 @@ Passwords and integrity salts are authenticated encrypted in options using keys 
 Records/settings are retained; the merchant defines retention, protects exports/backups and handles privacy requests. No dedicated privacy exporter/eraser or automatic retention scheduler is included. Provider response text may contain identifiers and should be redacted before sharing.
 
 == Frequently Asked Questions ==
-= Is this ready for production or WordPress.org publishing? =
-No. It is ready for internal sandbox testing. Live/refund contracts remain unverified and disabled. Clean automated results do not override the requirement for a complete non-test-only WordPress.org submission.
+= Does version 1.0.0 collect real payments? =
+No. This release supports the sandbox workflow only. Live payments and refunds remain disabled until the approved production API contract and merchant end-to-end tests are verified. The stable version number does not enable live payments. WordPress.org acceptance requires its separate human review and a complete submission; automated checks alone do not establish acceptance.
 
 = How does the customer return to the order page? =
 A verified browser return uses the owning account or checkout-session binding to redirect to WooCommerce's order-received page. If a cross-site POST omitted session cookies, a signed ten-minute same-site GET continuation restores them before checking ownership. The continuation ticket alone never reveals the order key. Unrecognized browsers receive a neutral message and can use their original order link or owner account.
@@ -78,17 +78,23 @@ The observed REST IPN V1 shape lacks sufficient amount/currency confirmation. Au
 Exact signed duplicates are ignored. Busy callbacks receive a retryable error. Paid orders are not downgraded by late failed responses. Reconcile before initiating another customer payment.
 
 = Can Live mode or Refund be enabled? =
-Not in this beta. These remain disabled until the provider contract and production integration are verified.
+Not in version 1.0.0. These remain disabled until the provider contract and production integration are verified.
 
 == External service ==
+The service is contacted only when a customer starts payment. Requests include merchant ID/password, signed hash, amount/currency, generated transaction and order references, timestamps, order description and store return URL. The plugin does not send customer card numbers, CVV, PIN or OTP. JazzCash controls its hosted payment page and its data processing.
+
 Hosted-link API: https://onlinepayments.jazzcash.com.pk/payment-orchestrator/api/v1/transactions/link
 Provider website/merchant support: https://www.jazzcash.com.pk/
 Provider privacy: https://www.jazzcash.com.pk/privacy-policy/
 Merchants must follow their current JazzCash agreement and integration documentation.
 
 == Changelog ==
-= 1.0.0-beta.1 =
-* Initial sandbox beta for CardRaabta – Pay with JazzCash for WooCommerce.
+= 1.0.0 =
+* Stable 1.0.0 version of CardRaabta – Pay with JazzCash for WooCommerce.
 * Hosted-link creation, signed callbacks, transaction history and CSV export.
 * Encrypted credentials, bounded parsing, replay protection and order/amount matching.
 * Checkout Blocks and HPOS support. Live payments and refunds remain disabled pending provider validation.
+* Reject unsigned provider field aliases and case-ambiguous callbacks.
+* Prevent another attempt from being recorded as completed after an order is paid.
+* Avoid schema updates on every page request; use versioned initialization.
+* Add repeatable integration checks, release packaging and GitHub security workflows.

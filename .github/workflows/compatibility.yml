@@ -1,0 +1,61 @@
+name: Every stable release
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: every-stable-release-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  releases:
+    name: Stable releases shard ${{ matrix.shard }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      max-parallel: 16
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+    services:
+      database:
+        image: mariadb:11.4
+        env:
+          MARIADB_ROOT_PASSWORD: root
+          MARIADB_DATABASE: wordpress
+        ports: ['3306:3306']
+        options: --health-cmd="mariadb-admin ping -h 127.0.0.1 -proot" --health-interval=10s --health-timeout=5s --health-retries=12
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
+        with:
+          php-version: '8.1'
+          extensions: mysqli, openssl
+          tools: wp-cli
+          coverage: none
+          ini-values: memory_limit=512M
+      - name: Test every inventoried stable release in this shard
+        run: python3 scripts/test-all-versions.py --shard ${{ matrix.shard }} --shards 16 --work "$RUNNER_TEMP/all-releases"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        if: always()
+        with:
+          name: every-release-${{ matrix.shard }}
+          path: |
+            ${{ runner.temp }}/all-releases/results.json
+            ${{ runner.temp }}/all-releases/*.log
+  complete:
+    name: Verify complete release inventory
+    needs: releases
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          pattern: every-release-*
+          path: matrix-results
+      - run: python3 scripts/verify-release-matrix.py matrix-results compatibility-results.csv
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: complete-compatibility-results
+          path: compatibility-results.csv

@@ -73,6 +73,21 @@ jobs:
         run: |
           set -euo pipefail
           WP_PATH="$RUNNER_TEMP/wordpress" bash scripts/test-wordpress.sh | tee integration.txt
+      - name: HTTP and browser checks
+        if: matrix.php == '8.3' && matrix.db == 'mariadb:11.4' && matrix.hpos == 'no'
+        run: |
+          set -euo pipefail
+          php -S 127.0.0.1:8080 -t "$RUNNER_TEMP/wordpress" > server.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid"' EXIT
+          for attempt in {1..30}; do
+            if curl -fsS http://localhost:8080/wp-login.php > /dev/null; then break; fi
+            sleep 1
+          done
+          python3 tests/http-smoke.py | tee http-smoke.txt
+          npm install --prefix "$RUNNER_TEMP/browser" --no-audit --no-fund playwright@1.62.1
+          "$RUNNER_TEMP/browser/node_modules/.bin/playwright" install --with-deps chromium
+          NODE_PATH="$RUNNER_TEMP/browser/node_modules" node tests/browser.cjs | tee browser-smoke.txt
       - name: Build distributable ZIP
         run: python3 scripts/build-release.py dist
       - name: WordPress Plugin Check on packaged files
@@ -91,6 +106,9 @@ jobs:
           path: |
             integration.txt
             plugin-check.txt
+            http-smoke.txt
+            browser-smoke.txt
+            server.log
             dist/*
   platform-lint:
     name: Syntax on ${{ matrix.os }}

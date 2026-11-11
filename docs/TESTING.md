@@ -28,7 +28,9 @@ The regression suite verifies strict callback parsing, duplicate/case-ambiguous 
 
 Plugin Check covers all its default stable checks: WordPress.org metadata/content, escaping, direct SQL, prefixing, redirects, resources, internationalization usage, version compatibility and other bundled rules. Necessary direct custom-ledger queries and connection-lock operations carry narrow, documented PHPCS comments; cached data cannot be used as payment authority. No Plugin Check checks or result codes are disabled for the packaged ZIP.
 
-`security.yml` runs JavaScript CodeQL with extended security queries on push/PR and weekly. CodeQL does not support PHP; PHP review is supplied by Plugin Check and behavioral tests, not represented as PHP CodeQL coverage. Dependency review runs on pull requests; there are no bundled third-party runtime libraries. Dependabot monitors pinned GitHub Actions.
+`security.yml` runs JavaScript CodeQL with extended security queries on push/PR and weekly. CodeQL does not support PHP; PHP review is supplied by Plugin Check and behavioral tests, not represented as PHP CodeQL coverage. Dependency review runs on pull requests; there are no bundled third-party runtime libraries. Dependabot monitors pinned GitHub Actions. Gitleaks 8.30.1 scans the full Git history with redacted output; its downloaded binary is pinned by SHA-256.
+
+GitHub default CodeQL setup is already enabled on this repository and publishes to the Security tab. The custom extended JavaScript job retains SARIF as an artifact, fails on findings, and does not upload competing advanced-configuration results. This avoids the GitHub restriction on mixing default and advanced CodeQL uploads.
 
 The review used WordPress security guidance and OWASP risk categories, including authorization/CSRF, stored/reflected XSS, SQL injection, unsafe redirects/SSRF, callback forgery/replay, information disclosure, secret storage and spreadsheet injection. These are bounded checks, not a claim that every known vulnerability is absent.
 
@@ -38,6 +40,12 @@ References:
 - https://developer.wordpress.org/apis/security/
 - https://github.com/WordPress/plugin-check
 - https://owasp.org/www-project-top-ten/
+
+## Observed results
+
+The initial GitHub CI run passed all 12 integration matrix jobs and all three OS syntax jobs: https://github.com/MalikArslanLive/cardraabta-pay-with-jazzcash/actions/runs/42990571842 . Each integration run completed 62 assertions with zero failures. Local PHP 8.1–8.5 runs with HPOS both on/off also passed all 62 checks. The extracted release ZIP passed Plugin Check 2.2.0 with zero errors and zero warnings, without excluding packaged files or checks.
+
+Local HTTP checks passed eight assertions covering neutral returns, forged callbacks/IPN, method/content-type rejection, private exports and nonce enforcement. Chromium exercised transaction details and settings switching. The test waits on stable element identity when button labels change. External WordPress/WooCommerce resources can log certificate failures in this isolated browser; plugin interaction and JavaScript exception checks are scoped to the plugin's local functionality.
 
 ## Outstanding provider and directory validation
 

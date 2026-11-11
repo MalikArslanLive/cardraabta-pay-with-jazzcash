@@ -99,7 +99,7 @@ jobs:
           unzip "$GITHUB_WORKSPACE/dist/cardraabta-pay-with-jazzcash-1.0.0.zip" -d "$RUNNER_TEMP/package"
           wp plugin check "$RUNNER_TEMP/package/cardraabta-pay-with-jazzcash" --slug=cardraabta-pay-with-jazzcash --format=json | tee "$GITHUB_WORKSPACE/plugin-check.txt"
           python3 "$GITHUB_WORKSPACE/scripts/check-plugin-report.py" "$GITHUB_WORKSPACE/plugin-check.txt"
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: results-php${{ matrix.php }}-wp${{ matrix.wp }}-${{ strategy.job-index }}

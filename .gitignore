@@ -1,0 +1,9 @@
+/dist/
+/vendor/
+/node_modules/
+*.log
+.env
+.env.*
+!.env.example
+
+__pycache__/

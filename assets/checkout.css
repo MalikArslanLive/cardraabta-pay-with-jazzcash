@@ -1,0 +1,67 @@
+.crj-payment-choice {
+    display: grid;
+    gap: .45rem;
+    padding: .75rem 0;
+    line-height: 1.55;
+}
+
+.crj-payment-choice img.crj-checkout-logo {
+    display: block;
+    float: none;
+    width: 130px;
+    height: auto;
+    max-height: none;
+    margin: 0;
+}
+
+.crj-payment-choice .crj-checkout-heading {
+    display: block;
+    margin: 0;
+    color: #211b24;
+    font-size: 1.3125rem;
+    font-weight: 700;
+    line-height: 1.25;
+}
+
+.crj-payment-choice .crj-checkout-methods {
+    display: grid;
+    gap: .4rem;
+    margin: 0 !important;
+    padding: 0;
+    list-style: none;
+}
+
+.crj-payment-choice .crj-checkout-methods > li {
+    display: flex;
+    align-items: center;
+    gap: .55rem;
+    margin: 0 !important;
+    color: #3c2822;
+    font-weight: 600;
+}
+
+.crj-checkout-method-icon {
+    display: inline-grid;
+    width: 1.8rem;
+    height: 1.8rem;
+    place-items: center;
+    flex: 0 0 1.8rem;
+    border-radius: .45rem;
+    background: #fff1df;
+    font-size: 1rem;
+    line-height: 1;
+}
+
+.crj-payment-notice {
+    padding: .8rem 1rem;
+    border-inline-start: 4px solid #aa2440;
+    border-radius: .25rem;
+    background: #fff1f3;
+    color: #65182b;
+}
+
+.crj-payment-notice--waiting {
+    border-color: #ad610c;
+    background: #fff5de;
+    color: #64350a;
+}
